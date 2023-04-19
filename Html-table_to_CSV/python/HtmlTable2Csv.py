@@ -4,7 +4,8 @@
     HTML Table to CSV
     
     Use:
-        python3 HtmlTable2Csv.py <inputfile> <outputfile.csv>
+        python3 HtmlTable2Csv.py if=inputfile of=outputfile.csv delim=delimiter
+        python3 HtmlTable2Csv.py --help
 
 '''
 
@@ -13,6 +14,7 @@ import re
 import sys
 
 EOL = '\n'
+TAB = '\t'
 DELIM = ';'
 SPACE  = ' '
 IGNORE = ["\x00", "\n"]
@@ -88,7 +90,7 @@ def checkTag(line):
 
 def strTable2csv(text, delimiter=DELIM):
     ''' input : string (Html), output : string (CSV) '''
-    
+
     if len(text) == 0:
         print("Empty text!")
         return ""
@@ -203,18 +205,49 @@ def table2csv(path, delimiter=DELIM):
 
 
 def main(argv):
+    msg = """Use:
+    python3 HtmlTable2Csv.py if=inputfile of=outputfile.csv delim=delimiter
+    """
+    msgHelp = """
+    For delimiters with special characters use quotation marks.
+    For example: delim='\\t' or delim=TAB
+    """
     if (len(argv) < 1):
-        print ('Use => python3 HtmlTable2Csv.py <inputfile> <outputfile.csv>')
+        print (msg)
         exit(0)
-    if (len(argv) == 1):
-        fileIn = argv[0]
+    fileIn, fileOut, delimiter = "", "", ""
+    for arg in argv:
+        if arg.startswith("if=") and fileIn == "":
+            fileIn = arg[3::]
+        if arg.startswith("of=") and fileOut == "":
+            fileOut = arg[3:]
+        if arg.startswith("delim=") and delimiter == "":
+            delimiter = arg[6::]
+        if arg.startswith("--help") or arg.startswith("-h"):
+            print(msg)
+            print(msgHelp)
+            exit(0)            
+
+    if (fileIn == ""):
+        print (msg)
+        exit(0)
+
+    if (fileOut == ""):
         fileOut = fileIn + ".csv"
-    if (len(argv) > 1):
-        fileIn = argv[0]
-        fileOut = argv[1]       
-    print ("Input : " + fileIn)
-    print ("Output: " + fileOut)
-    txt = table2csv(fileIn)
+      
+    print("Input : " + fileIn)
+    print("Output: " + fileOut)
+
+    msg = "Delimiter: [" + delimiter + "] "
+    if (delimiter == ""):
+        delimiter = DELIM
+        msg += "(Empty! Use Default '" + delimiter + "')"
+    if (delimiter == '\t' or delimiter == "\\t" or delimiter.lower() == "tab"):
+        delimiter = TAB
+        msg += "Tab"
+    print(msg)
+
+    txt = table2csv(fileIn, delimiter)
     if len(txt) == 0:
         print ("Invalid file or does not html table!")
     else:
