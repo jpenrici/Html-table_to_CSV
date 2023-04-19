@@ -2,7 +2,7 @@ from HtmlTable2Csv import *
 
 def test_checkTag():
 
-    # Test <td> tag
+    # Test <td> and <th> tag
     array = [0, 0, ""]
     assert checkTag("") == array
     assert checkTag("<") == array
@@ -11,6 +11,8 @@ def test_checkTag():
     assert checkTag("<tr>") == array
     assert checkTag("<t d >") == array
     assert checkTag("      <td>") == array
+    assert checkTag("<td></td>") == [1, 0, ""]
+    assert checkTag("<th>   </th>") == [1, 0, "   "]
     assert checkTag("<td   >Text</td>") == [1, 0, "Text"]
     assert checkTag("<th   >Text</th>") == [1, 0, "Text"]
     assert checkTag("<td   >Text</th>") == [1, 0, "Text"]

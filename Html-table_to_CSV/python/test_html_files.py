@@ -75,6 +75,12 @@ A;B;C
  ;3;4;5;6
 7;8;9;10;11
  ; ; ; ; ;12
+""",
+
+# 11 - <td></td>
+"""\
+AA;BB;CC
+ ;  ;1111
 """
 
 ]
@@ -82,11 +88,13 @@ A;B;C
 def test():
 
     for i in range(len(result)):
-        print("Test", i)
+        print("Test", i, " ...")
         assert table2csv("../html/test" + str(i) + ".html") == result[i]
 
+    print("Test delimiter ...")
     assert table2csv("../html/test1.html", '\t') == result[1].replace(';', '\t')
 
+    print("Test string ...")
     html = """<table>
               <tr><th>AA</th><th>BB</th><th>CC</th></tr>
               <tr><td>11</td><td>22</td><td>33</td></tr>

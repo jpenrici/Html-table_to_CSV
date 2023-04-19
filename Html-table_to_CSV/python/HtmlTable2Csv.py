@@ -26,8 +26,8 @@ def load(filename):
         f = open(filename, 'rb')
         lines = f.readlines()
         for line in lines:
-            txt = "".join([(chr(x) if not chr(x) in IGNORE else "") for x in line])
-            data += txt.lstrip().rstrip() + EOL
+            text = "".join([(chr(x) if not chr(x) in IGNORE else "") for x in line])
+            data += text.lstrip().rstrip() + EOL
         f.close()
     except IOError:
          print("Error:", filename)
@@ -101,6 +101,7 @@ def strTable2csv(text, delimiter=DELIM):
         return ""
 
     # Prepare
+    text = text.replace("></td>", "> </td>")
     text = text.replace("><", ">" + EOL + "<") 
 
     # Process    
@@ -195,13 +196,13 @@ def table2csv(path, delimiter=DELIM):
 
     # Load
     print("Load:", path)
-    txt = load(path)
+    text = load(path)
 
-    if len(txt) == 0:
+    if len(text) == 0:
         print("Empty file!")
         return ""
 
-    return strTable2csv(txt, delimiter)
+    return strTable2csv(text, delimiter)
 
 
 def main(argv):
@@ -247,16 +248,15 @@ def main(argv):
         msg += "Tab"
     print(msg)
 
-    txt = table2csv(fileIn, delimiter)
-    if len(txt) == 0:
+    text = table2csv(fileIn, delimiter)
+    if len(text) == 0:
         print ("Invalid file or does not html table!")
     else:
         # Output
-        save(fileOut, txt)
+        save(fileOut, text)
 
     print("Finished.")
 
 
 if __name__ == "__main__":
    main(sys.argv[1:])
-   
