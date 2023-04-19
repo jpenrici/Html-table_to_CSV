@@ -69,6 +69,7 @@ A;B;C
 4;5
 """,
 
+# 10 - extra
 """\
 1;2; ; ; 
  ;3;4;5;6
@@ -79,9 +80,22 @@ A;B;C
 ]
 
 def test():
+
     for i in range(len(result)):
         print("Test", i)
         assert table2csv("../html/test" + str(i) + ".html") == result[i]
+
+    assert table2csv("../html/test1.html", '\t') == result[1].replace(';', '\t')
+
+    html = """<table>
+              <tr><th>AA</th><th>BB</th><th>CC</th></tr>
+              <tr><td>11</td><td>22</td><td>33</td></tr>
+              <tr><td>44</td><td>55</td><td>66</td></tr>
+              </table>"""
+    
+    res = "AA\tBB\tCC\n11\t22\t33\n44\t55\t66\n"
+    assert strTable2csv(html, '\t') == res
+
     print("Everything is OK!")
 
 

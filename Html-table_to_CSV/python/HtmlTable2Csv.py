@@ -33,7 +33,6 @@ def load(filename):
 
 
 def save(filename, text):
-
     if len(filename) == 0:
         print("Empty file name!")
         return
@@ -87,25 +86,23 @@ def checkTag(line):
     return data
 
 
-def table2csv(path):
-    # Load 
-    print("Load:", path)
-    txt = load(path)
-
-    if len(txt) == 0:
-        print("Empty file!")
+def strTable2csv(text, delimiter=DELIM):
+    ''' input : string (Html), output : string (CSV) '''
+    
+    if len(text) == 0:
+        print("Empty text!")
         return ""
 
     # Check <table> tag
-    if len(re.findall("<table.*?>", txt)) < 1:
+    if len(re.findall("<table.*?>", text)) < 1:
         print("Html table not found!")
         return ""
 
     # Prepare
-    txt = txt.replace("><", ">" + EOL + "<") 
+    text = text.replace("><", ">" + EOL + "<") 
 
     # Process    
-    print("File with Html Table! Build CSV ... ")
+    print("Html Table found! Build CSV ... ")
 
     csv = ""
     row = []
@@ -115,7 +112,7 @@ def table2csv(path):
     flagTable = False
     flagRow = False
 
-    lines = txt.split(EOL)
+    lines = text.split(EOL)
     for i in range(len(lines)):
         # Prepare
         line = lines[i].replace(EOL, "")
@@ -181,14 +178,28 @@ def table2csv(path):
                 for i in range(min(len(table), len(matrix))):
                     txtRow = ""
                     for j in range(len(matrix[i])):
-                        txtRow += matrix[i][j] + DELIM
-                    txtTable += txtRow.rstrip(DELIM) + EOL
+                        txtRow += matrix[i][j] + delimiter
+                    txtTable += txtRow.rstrip(delimiter) + EOL
                 csv += txtTable
                 table = []
 
     print(csv)
 
     return csv
+
+
+def table2csv(path, delimiter=DELIM):
+    ''' input : file text (Html), output : string (CSV) '''
+
+    # Load
+    print("Load:", path)
+    txt = load(path)
+
+    if len(txt) == 0:
+        print("Empty file!")
+        return ""
+
+    return strTable2csv(txt, delimiter)
 
 
 def main(argv):
