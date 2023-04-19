@@ -14,7 +14,7 @@ import sys
 
 EOL = '\n'
 DELIM = ';'
-EMPTY = ' '
+SPACE  = ' '
 IGNORE = ["\x00", "\n"]
 
 
@@ -33,6 +33,11 @@ def load(filename):
 
 
 def save(filename, text):
+
+    if len(filename) == 0:
+        print("Empty file name!")
+        return
+
     try:
         f = open(filename, "w")
         f.write(text)
@@ -40,7 +45,6 @@ def save(filename, text):
         print("Save:", filename)
     except Exception:
         print("Error saving " + filename + " ...")
-        exit(0) 
 
 
 def checkTag(line):
@@ -83,24 +87,31 @@ def checkTag(line):
     return data
 
 
-def prepare(path):
-    # Load
+def table2csv(path):
+    # Load 
     print("Load:", path)
     txt = load(path)
 
-    # Check <table> tag
-    if len(re.findall("<table.*?>", txt)) < 1:
+    if len(txt) == 0:
+        print("Empty file!")
         return ""
 
+    # Check <table> tag
+    if len(re.findall("<table.*?>", txt)) < 1:
+        print("Html table not found!")
+        return ""
+
+    # Prepare
+    txt = txt.replace("><", ">" + EOL + "<") 
+
     # Process    
-    print("File with Html Table ...")
+    print("File with Html Table! Build CSV ... ")
 
     csv = ""
-    row = []    
+    row = []
     table = []
     maxCols = 0
     maxRows = 0
-    countCols = 0
     flag = False
 
     for line in txt.split(EOL):
@@ -111,93 +122,59 @@ def prepare(path):
         if flag == False:
             # Check <table> tag
             if re.search("<table.*?>", line):
+                table = []
                 flag = True
                 continue
         if flag == True:
-            # Start table reading
-            if re.search("</table>", line):
-                # Stop table reading
-                flag = False
-                # Rebuild table
-                matrix = [["" for x in range(maxCols)] for y in range(maxRows)]
-                print("Table: {0} x {1}".format(maxRows, maxCols))
-                currentCol = 0
-                currentRow = 0
-                for row in table:
-                    currentCol = 0
-                    for col in row:
-                        # print(col)
-                        while len(matrix[currentRow][currentCol]) > 0:
-                            currentCol += 1
-                        if col[0] > 0 and col[1] == 0:  # only colspan
-                            for dx in range(col[0]):
-                                matrix[currentRow][currentCol + dx] = EMPTY
-                        if col[0] == 0 and col[1] > 0:  # only rowspan
-                            for dy in range(col[1]):
-                                matrix[currentRow + dy][currentCol] = EMPTY
-                        if col[0] > 0 and col[1] > 0:   # colspan and rowspan
-                            for dx in range(col[0]):
-                                for dy in range(col[1]):
-                                    matrix[currentRow + dy][currentCol + dx] = EMPTY
-                        matrix[currentRow][currentCol] = col[2]
-                        currentCol += col[0]
-                    currentRow += 1                       
-                # print(matrix)
-                # Convert CSV
-                txt = ""
-                for i in range(len(matrix)):
-                    for j in range(len(matrix[i])):
-                        txt += matrix[i][j] + DELIM
-                    txt += EOL
-                csv = txt
-                continue
             # Check <tr> tag
             if line.startswith("<tr"):
-                # Start reading a line structure
                 row = []
                 maxRows += 1
-                countCols = 0
                 continue
             if line.startswith("</tr>"):
-                # Stop reading a line structure
                 table += [row]
                 continue
             # Check <td> and <th> tag
             if line.startswith("<td") or line.startswith("<th"):          
-                # Check spans
                 data = checkTag(line)
-                row += [data]
-                countCols += data[0]
-                if maxCols < countCols:
-                    maxCols = countCols
+                maxCols += data[0]
                 maxRows += data[1]
+                row += [data]
+                continue
+            if re.search("</table>", line):
+                flag = False
+                # Rebuild table
+                matrix = [["" for x in range(maxCols)] for y in range(maxRows)]
+                y = 0
+                for row in table:
+                    x = 0
+                    for col in row:
+                        colspan, rowspan, text = col
+                        while len(matrix[y][x]) > 0:      # !Empty
+                            x += 1
+                        if colspan > 0 and rowspan == 0:  # only colspan
+                            for dx in range(colspan):
+                                matrix[y][x + dx] = SPACE 
+                        if colspan == 0 and rowspan > 0:  # only rowspan
+                            for dy in range(rowspan):
+                                matrix[y + dy][x] = SPACE 
+                        if colspan > 0 and rowspan > 0:   # colspan and rowspan
+                            for dx in range(colspan):
+                                for dy in range(rowspan):
+                                    matrix[y + dy][x + dx] = SPACE 
+                        matrix[y][x] = text
+                        x += colspan
+                    y += 1                       
+                # Convert CSV
+                txtTable = ""
+                for i in range(min(len(table), len(matrix))):
+                    txtRow = ""
+                    for j in range(len(matrix[i])):
+                        txtRow += matrix[i][j] + DELIM
+                    txtTable += txtRow.rstrip(DELIM) + EOL
+                csv += txtTable        
 
     return csv
-
-
-def test_checkTag():
-
-    # Test <td> tag
-    array = [0, 0, ""]
-    assert checkTag("") == array
-    assert checkTag("<") == array
-    assert checkTag("<>") == array
-    assert checkTag("<t >") == array
-    assert checkTag("<tr>") == array
-    assert checkTag("<t d >") == array
-    assert checkTag("      <td>") == array
-    assert checkTag("<td   >Text</td>") == [1, 0, "Text"]
-    assert checkTag("<th   >Text</th>") == [1, 0, "Text"]
-    assert checkTag("<td   >Text</th>") == [1, 0, "Text"]
-    assert checkTag("<th   >Text</td>") == [1, 0, "Text"]
-    assert checkTag("<td>" + EOL + "Text" + EOL + "</td>") == [1, 0, "Text"]
-    assert checkTag("<td bgcolor=\"#000000\">Text</td>") == [1, 0, "Text"]
-    assert checkTag("<td colspan=\"5\">Text</td>") == [5, 0, "Text"]
-    assert checkTag("<th colspan=\"5\">Text</th>") == [5, 0, "Text"]
-    assert checkTag("<td colspan=\"5\" rowspan=\"25\">Text</td>") == [5, 25, "Text"]
-    assert checkTag("<th colspan=\"5\" rowspan=\"25\">Text</th>") == [5, 25, "Text"]
-    assert checkTag("<td bgcolor=\"#FFFFFF\" rowspan=\"2\">Text Text</td>") == [1, 2, "Text Text"]
-    print("CheckTag() is ok!")
 
 
 def main(argv):
@@ -212,32 +189,17 @@ def main(argv):
         fileOut = argv[1]       
     print ("Input : " + fileIn)
     print ("Output: " + fileOut)
-    txt = prepare(fileIn)
+    txt = table2csv(fileIn)
     if len(txt) == 0:
         print ("Invalid file or does not html table!")
     else:
         # Terminal
         print(txt)
         # Output
-        # save(fileOut, txt)
+        save(fileOut, txt)
+
     print("Finished.")
 
 
 if __name__ == "__main__":
-
-   # Command Line
-   #########################
-
-   # main(sys.argv[1:])    
-
-   # Checktag() function test
-   ##########################
-
-   test_checkTag()
-
-   # File test
-   ##########################
-   
-   main(["../html/test1.html"])
-   main(["../html/test2.html"])
-   main(["../html/test3.html"])
+   main(sys.argv[1:])

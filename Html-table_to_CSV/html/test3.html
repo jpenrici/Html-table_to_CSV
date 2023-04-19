@@ -1,18 +1,33 @@
 <!DOCTYPE html>
 <html>
 
+<head>
+    <style>
+    table,
+    th,
+    td {
+        border: 1px solid black;
+    }
+    </style>
+</head>
+
 <body>
-    <table>
+    <h2>Html Table</h2>
+    <p>Example test</p>
+    <table style="width:100%">
         <tr>
-            <th>A</th>
+            <th colspan="2">A</th>
+            <th>B</th>
+        </tr>
+        <tr>
             <td>1</td>
-        </tr>
-        <tr>
-            <th rowspan="2">B</th>
             <td>2</td>
+            <td>3</td>
         </tr>
         <tr>
-            <td>3</td>
+            <td>4</td>
+            <td>5</td>
+            <td>6</td>
         </tr>
     </table>
 </body>
