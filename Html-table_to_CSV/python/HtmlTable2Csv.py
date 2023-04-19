@@ -112,37 +112,48 @@ def table2csv(path):
     table = []
     maxCols = 0
     maxRows = 0
-    flag = False
+    flagTable = False
+    flagRow = False
 
-    for line in txt.split(EOL):
+    lines = txt.split(EOL)
+    for i in range(len(lines)):
         # Prepare
-        line = line.replace(EOL, "")
+        line = lines[i].replace(EOL, "")
         line = line.lstrip().rstrip()
         # Read
-        if flag == False:
+        if flagTable == False:
             # Check <table> tag
             if re.search("<table.*?>", line):
                 table = []
-                flag = True
+                flagTable = True
                 continue
-        if flag == True:
+        if flagTable == True:
             # Check <tr> tag
             if line.startswith("<tr"):
                 row = []
                 maxRows += 1
+                flagRow = True
                 continue
             if line.startswith("</tr>"):
                 table += [row]
+                flagRow = False
                 continue
             # Check <td> and <th> tag
-            if line.startswith("<td") or line.startswith("<th"):          
+            if line.startswith("<td") or line.startswith("<th"):       
                 data = checkTag(line)
                 maxCols += data[0]
                 maxRows += data[1]
                 row += [data]
                 continue
-            if re.search("</table>", line):
-                flag = False
+            # Check other cases
+            case = 1 if line.startswith("<table") else 0      # table reopened            
+            case = 2 if line.startswith("</table") else case  # table closed 
+            case = 3 if i == len(lines) - 1 else case         # is on the finish line  
+            # Table to CSV      
+            if case > 0:
+                flagTable = case == 1
+                if flagRow:  # last line is open
+                    table += [row]              
                 # Rebuild table
                 matrix = [["" for x in range(maxCols)] for y in range(maxRows)]
                 y = 0
@@ -172,7 +183,10 @@ def table2csv(path):
                     for j in range(len(matrix[i])):
                         txtRow += matrix[i][j] + DELIM
                     txtTable += txtRow.rstrip(DELIM) + EOL
-                csv += txtTable        
+                csv += txtTable
+                table = []
+
+    print(csv)
 
     return csv
 
@@ -193,8 +207,6 @@ def main(argv):
     if len(txt) == 0:
         print ("Invalid file or does not html table!")
     else:
-        # Terminal
-        print(txt)
         # Output
         save(fileOut, txt)
 
@@ -203,3 +215,4 @@ def main(argv):
 
 if __name__ == "__main__":
    main(sys.argv[1:])
+   
