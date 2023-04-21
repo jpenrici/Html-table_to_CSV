@@ -100,8 +100,21 @@ def test():
               <tr><td>11</td><td>22</td><td>33</td></tr>
               <tr><td>44</td><td>55</td><td>66</td></tr>
               </table>"""
-    
     res = "AA\tBB\tCC\n11\t22\t33\n44\t55\t66\n"
+    assert strTable2csv(html, '\t') == res
+
+    html = "<table><th>AA</th><td>BB</td><td>CC</td></table>"
+    res = "AA\tBB\tCC\n"
+    assert strTable2csv(html, '\t') == res
+
+    print("Test with incomplete tables ...")
+    html = "<table><th>AA</th><td>Error!</table>"
+    res = "AA\n"
+    assert strTable2csv(html) == res
+
+    html = """<table><th>AAA</th><td>Error
+              <table>"""
+    res = "AAA\n"
     assert strTable2csv(html, '\t') == res
 
     print("Everything is OK!")

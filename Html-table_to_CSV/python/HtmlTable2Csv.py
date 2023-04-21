@@ -99,21 +99,21 @@ def strTable2csv(text, delimiter=DELIM):
     if len(re.findall("<table.*?>", text)) < 1:
         print("Html table not found!")
         return ""
+    print("Html Table found! Build CSV ... ")        
 
     # Prepare
     text = text.replace("></td>", "> </td>")
-    text = text.replace("><", ">" + EOL + "<") 
+    text = text.replace("</table>", EOL + "</table>")
+    text = text.replace("><", ">" + EOL + "<")
 
     # Process    
-    print("Html Table found! Build CSV ... ")
-
     csv = ""
     row = []
     table = []
     maxCols = 0
     maxRows = 0
-    flagTable = False
     flagRow = False
+    flagTable = False
 
     lines = text.split(EOL)
     for i in range(len(lines)):
@@ -123,7 +123,7 @@ def strTable2csv(text, delimiter=DELIM):
         # Read
         if flagTable == False:
             # Check <table> tag
-            if re.search("<table.*?>", line):
+            if line.startswith("<table"):
                 table = []
                 flagTable = True
                 continue
@@ -139,37 +139,38 @@ def strTable2csv(text, delimiter=DELIM):
                 flagRow = False
                 continue
             # Check <td> and <th> tag
-            if line.startswith("<td") or line.startswith("<th"):       
+            if line.startswith("<td") or line.startswith("<th"):
                 data = checkTag(line)
                 maxCols += data[0]
                 maxRows += data[1]
                 row += [data]
+                flagRow = True
                 continue
             # Check other cases
             case = 1 if line.startswith("<table") else 0      # table reopened            
             case = 2 if line.startswith("</table") else case  # table closed 
-            case = 3 if i == len(lines) - 1 else case         # is on the finish line  
+            case = 3 if i >= len(lines) - 1 else case         # end of text
             # Table to CSV      
             if case > 0:
                 flagTable = case == 1
                 if flagRow:  # last line is open
-                    table += [row]              
+                    table += [row]            
                 # Rebuild table
-                matrix = [["" for x in range(maxCols)] for y in range(maxRows)]
+                matrix = [["" for x in range(maxCols + 1)] for y in range(maxRows + 1)]
                 y = 0
-                for row in table:
+                for currentRow in table:
                     x = 0
-                    for col in row:
-                        colspan, rowspan, text = col
-                        while len(matrix[y][x]) > 0:      # !Empty
+                    for currentCol in currentRow:
+                        colspan, rowspan, text = currentCol
+                        while len(matrix[y][x]) > 0 and x < maxCols:    # !Empty
                             x += 1
-                        if colspan > 0 and rowspan == 0:  # only colspan
+                        if colspan > 0 and rowspan == 0:                # only colspan
                             for dx in range(colspan):
                                 matrix[y][x + dx] = SPACE 
-                        if colspan == 0 and rowspan > 0:  # only rowspan
+                        if colspan == 0 and rowspan > 0:                # only rowspan
                             for dy in range(rowspan):
                                 matrix[y + dy][x] = SPACE 
-                        if colspan > 0 and rowspan > 0:   # colspan and rowspan
+                        if colspan > 0 and rowspan > 0:                 # colspan and rowspan
                             for dx in range(colspan):
                                 for dy in range(rowspan):
                                     matrix[y + dy][x + dx] = SPACE 
