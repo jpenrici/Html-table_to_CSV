@@ -16,11 +16,11 @@ Friend Module HtmlTable2Csv
     Public Sub Main(args As String())
 
         'HtmlTable2Csv
-        'Run(args)
+        Run(args)
 
         'Test
         'Test_HtmlTable2Csv.Test_ChackTag()
-        Test_HtmlTable2Csv.Test_Table2Csv()
+        'Test_HtmlTable2Csv.Test_Table2Csv()
 
     End Sub
 
@@ -65,7 +65,7 @@ Friend Module HtmlTable2Csv
         End If
 
         If fileOut = "" Then
-            fileOut = fileIn + ".csv"
+            fileOut = fileIn.Replace(".", "_") + ".csv"
         End If
 
         Console.WriteLine("Input : " + fileIn)
@@ -87,7 +87,7 @@ Friend Module HtmlTable2Csv
             Console.WriteLine("Invalid file or does not html table!")
         Else
             'Output
-            'Save(fileOut, text)
+            Save(fileOut, text)
         End If
 
         Console.WriteLine("Finished.")
@@ -155,6 +155,7 @@ Friend Module HtmlTable2Csv
                 Console.WriteLine("Html Table found! Build CSV ... ")
 
                 'Prepare
+                text = text.Replace(TAB, "")
                 text = text.Replace("></td>", "> </td>")
                 text = text.Replace("</table>", EOL + "</table>")
                 text = text.Replace("><", ">" + EOL + "<")
@@ -193,7 +194,7 @@ Friend Module HtmlTable2Csv
                         End If
                         'Check <td> And <th> tag
                         If line.StartsWith("<td") Or line.StartsWith("<th") Then
-                            Dim data As Array = CheckTag(line, True)
+                            Dim data As Array = CheckTag(line, False)
                             maxCols += Convert.ToDecimal(data(0))
                             maxRows += Convert.ToDecimal(data(1))
                             Dim col() As String = {data(0), data(1), data(2), rows}
@@ -209,24 +210,20 @@ Friend Module HtmlTable2Csv
                         If state > 0 Then
                             flagTable = (state = 1)
                             'Rebuild table
-                            Dim matrix(maxRows + 1, maxCols + 1) As String
-                            For r = 0 To maxRows
-                                For c = 0 To maxCols
-                                    matrix(r, c) = ""
-                                Next c
-                            Next r
+                            Dim matrix(,) As String = Array2D(maxRows + 1, maxCols + 1, "")
+                            'ViewArray(matrix, maxRows, maxCols)
                             Dim y As Integer = 0
                             Dim x As Integer = 0
                             Dim currentRow As Integer = 0
                             For Each currentCol In table
+                                Dim colspan As Integer = currentCol(0)
+                                Dim rowspan As Integer = currentCol(1)
+                                Dim value As String = currentCol(2)
                                 If currentRow <> currentCol(3) Then
                                     currentRow = currentCol(3)
                                     y += 1
                                     x = 0
                                 End If
-                                Dim colspan As Integer = currentCol(0)
-                                Dim rowspan As Integer = currentCol(1)
-                                Dim value As String = currentCol(2)
                                 While Len(matrix(y, x)) > 0 And x < maxCols '!Empty
                                     x += 1
                                 End While
@@ -250,16 +247,9 @@ Friend Module HtmlTable2Csv
                                 matrix(y, x) = value
                                 x += colspan
                             Next currentCol
+                            'ViewArray(matrix, maxRows, maxCols)
                             'Convert CSV
-                            Dim txtTable As String = ""
-                            For r = 0 To maxRows
-                                Dim txtRow As String = ""
-                                For c = 0 To maxCols
-                                    txtRow += matrix(r, c) + delimiter
-                                Next c
-                                txtTable += txtRow.TrimEnd(delimiter) + EOL
-                            Next r
-                            csv += txtTable
+                            csv += Array2Str(matrix, Math.Min(rows, maxRows), maxCols, delimiter)
                             table.Clear()
                         End If
                     End If
@@ -311,15 +301,73 @@ Friend Module HtmlTable2Csv
     Private Sub Save(ByVal filename As String, ByVal text As String)
 
         If Len(filename) > 0 And Len(text) > 0 Then
-            Dim home As String = Environment.GetFolderPath(Environment.SpecialFolder.Personal)
-            Dim path As String = home + filename
-
-            Dim file As StreamWriter
-            file = FileIO.FileSystem.OpenTextFileWriter(path, True)
-            file.WriteLine(text)
-            file.Close()
+            Try
+                Dim path As String = filename
+                Dim file As StreamWriter
+                file = FileIO.FileSystem.OpenTextFileWriter(path, True)
+                file.WriteLine(text)
+                file.Close()
+                Console.WriteLine("Save: " + filename)
+            Catch
+                Console.WriteLine("Error saving " + filename + " ...")
+            End Try
         End If
 
     End Sub
+
+    Private Sub ViewArray(ByVal arr As Array, ByVal rows As Integer, ByVal cols As Integer)
+
+        Try
+            For r = 0 To rows
+                Dim text As String = ""
+                For c = 0 To cols
+                    text += """" + arr(r, c) + """" + ","
+                Next c
+                text = text.TrimEnd(",")
+                Console.WriteLine("({0})[{1}]", r, text)
+            Next r
+        Catch
+            Console.WriteLine("Error: Array!")
+        End Try
+
+    End Sub
+
+    Private Function Array2Str(ByVal arr As Array, ByVal rows As Integer, ByVal cols As Integer,
+                               Optional ByVal delimiter As String = DELIM) As String
+
+        Dim text As String = ""
+        Dim temp As String
+        Try
+            For r = 0 To rows
+                temp = ""
+                For c = 0 To cols
+                    temp += arr(r, c) + delimiter
+                Next c
+                temp = temp.TrimEnd(delimiter)
+                If temp <> "" Then
+                    text += temp + EOL
+                End If
+            Next r
+        Catch
+            Console.WriteLine("Error: Array!")
+        End Try
+
+        Array2Str = text
+
+    End Function
+
+    Private Function Array2D(ByVal rows As Integer, ByVal cols As Integer,
+        ByVal value As String) As Array
+
+        Dim arr(rows, cols) As String
+        For r = 0 To rows
+            For c = 0 To cols
+                arr(r, c) = value
+            Next c
+        Next r
+
+        Array2D = arr
+
+    End Function
 
 End Module

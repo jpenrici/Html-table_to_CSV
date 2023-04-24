@@ -34,7 +34,7 @@
 
         ' 4 - colspan and rowspan
         html = Load(home + "test4.html")
-        exp = "1;2; ; ; " + EOL
+        exp = "1;2; ; ; " + EOL + " " + EOL
         res = StrTable2Csv(html)
         Debug.Assert(exp = res)
 

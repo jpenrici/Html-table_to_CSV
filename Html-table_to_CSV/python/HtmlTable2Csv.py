@@ -102,6 +102,7 @@ def strTable2csv(text, delimiter=DELIM):
     print("Html Table found! Build CSV ... ")        
 
     # Prepare
+    text = text.replace(TAB, "")
     text = text.replace("></td>", "> </td>")
     text = text.replace("</table>", EOL + "</table>")
     text = text.replace("><", ">" + EOL + "<")
